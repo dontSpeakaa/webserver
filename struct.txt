@@ -1,0 +1,150 @@
+信号
+
+semget创建信号量集，与之关联的内核数据结构体semid_ds将被创建并初始化
+
+#include <sys/sem.h>
+
+int semget( key_t key, int num_sems, int sem_flags );
+
+flags指定一组标志，她的低9比特是该信号量的权限
+
+struct ipc_perm
+{
+	key_t key;	//键值
+	uid_t uid;
+	gid_t gid;	//所有者的有效组ID
+	uid_t cuid;	//创建者的有效用户ID 
+	gid_t cgid;	//创建者的有效组ID
+	mode_t mode;	//访问权限
+}
+
+struct semid_ds
+{
+	struct ipc_perm sem_perm;		//信号量的操作权限
+	unsigned long int sem_nsems;	//该信号量集中的信号量数目
+	time_t sem_otime;				//最后一次调用semop的时间
+	time_t sem_ctime;				//最后一次调用semctl的时间
+}
+
+int semop(int sem_id ,struct sembuf* sem_ops, size_t nums_sem_ops);
+
+id参数由semget调用返回的信号量集标识符，用以指定被操作的目标信号量集，sem_ops参数指向一个sembuf结构体类型的数组
+
+struct sembuf
+{
+	unsigned short int sem_num;		//在信号集中信号量的编号
+	short int sem_op;
+	short int sem_flg;
+}
+
+
+
+unsigned short semval;		／· 信号量的值
+unsigned short semzcnt;		//等待信号量变0的进程数量
+unsigned short semncnt;		//等待信号量增加的进程数量
+pid_t sempid;				//最后一次执行semop操作的进程ID
+
+
+
+int semctl( int sem_id, int sem_num, int command, ... );
+
+
+第四个参数推荐格式
+
+union semun
+{
+	int val;					//Linu x 内核没有使用
+	struct semid_ds* buf;		//用于IPC_STAT 和IPC_SET 命令
+	unsigned short* array;		//用于GETALL  SETALL 命令
+	struct seminfo* _buf;		//用于IPC_INFO 命令
+}
+
+struct seminfo
+{
+	int semmap;
+	int semmni;
+	int semmns;
+	int semmnu;
+	int semmsl;
+	int semopm;
+	int semume;
+	int semusz;
+	int semvmx;
+	//最多允许的undo次数
+	int semaem
+}
+
+共享内存
+
+#include <sys/shm.h>
+
+int shmget( key_t key, size_t size, int shmflg );
+
+创建后与之关联的内核数据结构 shmid_ds被创建并且初始化
+
+struct ipc_perm
+{
+	key_t key;	//键值
+	uid_t uid;
+	gid_t gid;	//所有者的有效组ID
+	uid_t cuid;	//创建者的有效用户ID 
+	gid_t cgid;	//创建者的有效组ID
+	mode_t mode;	//访问权限
+}
+
+struct shmid_ds
+{
+	struct ipc_perm shm_perm;
+	size_t shm_segsz;			//共享内存大小
+	_time_t shm_atime;
+	_time_t shm_atime;
+	_time_t shm_ctime;
+	_pid_t shm_cpid;
+	_pid_t shm_lpid;			//最后一次执行shmat或shmdt操作的进程pid
+	shmatt_t shm_nattach;		//目前关联到此共享内存的进程数量
+}
+
+void* shmat( int shm_id, const void* shm_addr, int shmflg );  //sbmat成功时返回共享内存被关联到的地址
+int shmdt( const void* shm_addr );
+
+shmctl 系统调用控制共享内存的某些属性．
+int shmctl( int shm_id, int commad, struct shmid_ds* buf );
+
+
+信号函数
+
+struct sigaction
+{
+#ifdef _USE_POSIX199309
+	union
+	{
+		_sighandler_t sa_handler;
+		void (*sa_sigaction) (int, siginfo_t*, void*);
+	}
+
+	_sigaction_handler;
+	#define sa_handler _sigaction_handler.sa_handler
+	#define sa_handler _sigaction_handler.sa_sigaction
+	#else
+		_sighandler_t sa_handler;
+	#endif
+		_sigset_t sa_mask;
+		int sa_flags;
+		void (*sa_restorer) (void);
+};
+
+信号集
+#include <bit/sigset.h>
+#define _SIGSET_NWORDS (1024 / ( 8*sizeof(unsigned long int)))
+typedef struct
+{
+	unsigned long int _val[_SIGSET_NWORDS];			//数组的每个位表示一个信号
+}_sigset_t;
+
+提供一下函数来设置、修改、删除、查询信号集
+#include <signal.h>
+int sigemptyset (sigset_t* _set)
+int sigfillset (sigset_t* _set)								//在信号集中设置所有信号
+int sigaddset (sigset_t* _set, int _signo)					//将信号添加至信号集中
+int sigdelset (sigset_t* _set, int _signo)					//将信号从信号集中删除
+int sigismember ( const sigset_t* _set, int _signo)			//测试信号是否在信号集中
