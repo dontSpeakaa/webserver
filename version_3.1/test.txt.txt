@@ -1,0 +1,5 @@
+GET /~ross/ HTTP/1.1
+Host: cis.poly.edu
+
+GET /index.html HTTP/1.1
+Host: 192.168.65.136:12345
